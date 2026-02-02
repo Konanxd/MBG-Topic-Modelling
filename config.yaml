@@ -1,0 +1,26 @@
+data:
+  raw_path: "../data/raw/tweets.csv"
+  processed_path: "../data/processed/tweets_processed.csv"
+  text_column: "text"
+
+preprocessing:
+  remove_urls: true
+  remove_mentions: true
+  remove_hashtags: false
+  remove_numbers: true
+  min_length: 3
+  max_length: 500
+  language: "indonesian"
+
+model:
+  name: "bertopic"
+  embedding_model: "paraphrase-multilingual-MiniLM-L12-v2"
+  nr_topics: "auto" # or specify a number
+  min_topic_size: 10
+  n_gram_range: [1, 2]
+  calculate_probabilities: true
+
+output:
+  model_path: "../models/topic_model.pkl"
+  results_path: "../results/"
+  figures_path: "../results/figures/"
