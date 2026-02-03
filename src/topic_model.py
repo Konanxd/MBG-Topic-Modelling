@@ -19,14 +19,12 @@ class TopicModeler:
                  nr_topics: Optional[int] = None,
                  min_topic_size: int = 30,
                  n_gram_range: Tuple[int, int] = (1,2),
-                 calculate_probabilities: bool = True,
-                 use_gpu_umap: bool = True):
+                 calculate_probabilities: bool = True):
         self.embedding_model = embedding_model
         self.nr_topics = nr_topics
         self.min_topic_size = min_topic_size
         self.n_gram_range = n_gram_range
         self.calculate_probabilities = calculate_probabilities
-        self.use_gpu_umap = use_gpu_umap
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -45,58 +43,30 @@ class TopicModeler:
         
         logger.info(f"TopicModeler initialized with model: {embedding_model}")
 
+    # def _create_embedding_model(self) -> SentenceTransformer:
+    #     logger.info(f"Loading embedding model: {self.embedding_model}")
+    #     model = SentenceTransformer(self.embedding_model)
+
+    #     if self.device == "cuda":
+    #         model = model.to(self.device)
+    #         logger.info("✓ Embedding model moved to GPU")
+
+    #     return model
+
     def _create_embedding_model(self) -> SentenceTransformer:
         logger.info(f"Loading embedding model: {self.embedding_model}")
-        model = SentenceTransformer(self.embedding_model)
+
+        model = SentenceTransformer(
+            self.embedding_model,
+            device=self.device
+        )
 
         if self.device == "cuda":
-            model = model.to(self.device)
-            logger.info("✓ Embedding model moved to GPU")
+            model = model.half()  # 🔥 FP16 speedup
+            logger.info("✓ Embedding model using GPU (FP16 enabled)")
 
         return model
 
-    def _create_umap_model(self) -> UMAP:
-        if self.use_gpu_umap and self.device == "cuda":
-            try:
-                from cuml.manifold import UMAP as cumlUMAP
-                
-                logger.info("✓ Using GPU-accelerated UMAP (cuML)")
-                
-                umap_model = cumlUMAP(
-                    n_neighbors=10,        # Reduced for speed
-                    n_components=5,
-                    n_epochs=100,          # Reduced from default 200
-                    min_dist=0.0,
-                    metric='cosine',
-                    random_state=42,
-                    verbose=True
-                )
-                
-                logger.info("Expected UMAP time: 2-3 minutes (GPU)")
-                return umap_model
-                
-            except ImportError:
-                logger.warning("⚠️  cuML not installed. Install with:")
-                logger.warning("    !pip install cuml-cu11 --extra-index-url=https://pypi.nvidia.com")
-                logger.info("Falling back to optimized CPU UMAP...")
-        
-        logger.info("Using optimized CPU UMAP")
-        
-        umap_model = UMAP(
-            n_neighbors=10,        # Reduced from 15 (30% faster)
-            n_components=5,        # Good for clustering
-            n_epochs=100,          # Reduced from 200 (40% faster)
-            min_dist=0.0,          # Tight clusters
-            metric='cosine',       # Best for text
-            random_state=42,
-            verbose=True,          # Show progress
-            n_jobs=1,              # Single thread (UMAP parallelization is tricky)
-            init='spectral',       # Fast initialization
-        )
-        
-        logger.info("Expected UMAP time: 5-8 minutes (optimized CPU)")
-
-        return umap_model
 
     def _create_hdbscan_model(self) -> HDBSCAN:
         hdbscan_model = HDBSCAN(
@@ -128,7 +98,7 @@ class TopicModeler:
 
         if batch_size is None:
             if self.device == "cuda":
-                batch_size = 128
+                batch_size = 256
                 logger.info(f"Auto-detected batch size: {batch_size} (GPU)")
             else:
                 batch_size = 32
