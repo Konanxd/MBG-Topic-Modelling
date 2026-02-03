@@ -122,7 +122,7 @@ class TopicModeler:
 
         return vectorizer_model 
 
-    def train(self, documents: List[str]) -> 'TopicModeler':
+    def train(self, documents: List[str], batch_size: Optional[int] = None) -> 'TopicModeler':
         logger.info(f"Starting training on {len(documents)} documents")
         logger.info(f"Device: {self.device}")
 
@@ -204,7 +204,7 @@ class TopicModeler:
         if self.model is None:
             raise ValueError("Model not trained. Call train() first.")
         
-        return self.model.get_topic(topic_id, top_n=top_n)
+        return self.model.get_topic(topic_id, top_n)
     
     def get_document_topics(self, documents: List[str]) -> pd.DataFrame:
         if self.model is None:
