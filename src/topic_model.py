@@ -62,10 +62,30 @@ class TopicModeler:
         )
 
         if self.device == "cuda":
-            model = model.half()  # 🔥 FP16 speedup
+            model = model.half() 
             logger.info("✓ Embedding model using GPU (FP16 enabled)")
 
         return model
+
+    def _create_umap_model(self) -> UMAP:
+        logger.info("Using CPU UMAP (GPU used only for embeddings)")
+
+        umap_model = UMAP(
+            n_neighbors=10,
+            n_components=5,
+            n_epochs=100,
+            min_dist=0.0,
+            metric="cosine",
+            random_state=42,
+            verbose=True,
+            n_jobs=1,
+            init="spectral",
+            low_memory=True
+        )
+
+        logger.info("Expected UMAP time: ~5–8 minutes (CPU)")
+
+        return umap_model
 
 
     def _create_hdbscan_model(self) -> HDBSCAN:
