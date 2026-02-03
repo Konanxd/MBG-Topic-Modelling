@@ -117,11 +117,11 @@ class TopicModeler:
         
         return self.model.get_topic_info()
     
-    def get_topic_words(self, topic_id: int, topic_n: int = 10) -> List[Tuple[str, float]]:
+    def get_topic_words(self, topic_id: int, top_n: int = 10) -> List[Tuple[str, float]]:
         if self.model is None:
             raise ValueError("Model not trained. Call train() first.")
         
-        return self.model.get_topic(topic_id, topic_n)
+        return self.model.get_topic(topic_id, top_n=top_n)
     
     def get_document_topics(self, documents: List[str]) -> pd.DataFrame:
         if self.model is None:
@@ -140,7 +140,7 @@ class TopicModeler:
             raise ValueError("Model not trained. Call train() first.")
 
         logger.info(f"Reducing topics to {nr_topics}")
-        self.model.reduce_topics(self.topics, nr_topicss=nr_topics)
+        self.model.reduce_topics(self.topics, nr_topics=nr_topics)
 
         self.topics = self.model.topics_
 
@@ -172,7 +172,7 @@ class TopicModeler:
 
         embedding_path = path.replace(".pkl", "_embedding.pkl")
         try:
-            with open(embedding_path, 'wb') as f:
+            with open(embedding_path, 'rb') as f:
                 self.embeddings = pickle.load(f)
         except FileNotFoundError:
             logger.warning("Embedding file not found. Visualization may be limited.")
